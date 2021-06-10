@@ -7,6 +7,8 @@ from WER import cal_wer
 import re
 import numpy as np
 from tqdm import tqdm 
+import os 
+
 
 def normal():
     head = random.randint(0xb0, 0xf7)
@@ -50,6 +52,8 @@ for i in trange:
 
     file_folder = 1
     file_number = random.randint(1, 100)
+    os.makedirs('test', exist_ok=True)
+    out_path = 'test/{}-{}-{}.jpg'.format(i, file_folder, file_number)
 
     file_folder = 'data/{0:03d}'.format(file_folder)
     file_number = str(file_number)
@@ -64,7 +68,6 @@ for i in trange:
     wp = 0.1
     hp = 0.8
     image_editable.text((width*wp, height*hp), ground_truth, "black", font=font, spacing=20, align="center")
-    out_path = 'test/' + file_folder + '_' + file_number + '.jpg'
     image.save(out_path)
 
     reader = easyocr.Reader(['ch_tra', 'en'])
