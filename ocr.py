@@ -8,6 +8,8 @@ import re
 import numpy as np
 from tqdm import tqdm 
 import os 
+import cv2
+import csv
 
 ## Generate random chinese words
 def normal():
@@ -100,6 +102,38 @@ def model_precision_test():
 
 def generate_meme_context_file():
     output_path = "meme/context.csv"
+
+    image = []
+    #count = 0
+    for files in os.listdir("meme/001"):
+        if os.path.isfile("meme/001/"+files):
+            #os.rename("meme/001/"+files,'meme/001/{0:04d}.jpg'.format(count))
+            #count += 1
+            image.append("meme/001/"+files)
+
+    subtitles = []
+    for i in tqdm(range(100)):
+
+        image_path = image[i]
+        pic_name = image_path.replace("meme/001/","")
+
+        pic = cv2.imread(image_path)
+        # cv2.imshow('test', pic)
+        # cv2.waitKey(0)
+        # cv2.destroyAllWindows()
+
+        reader = easyocr.Reader(['ch_tra', 'en'])
+        results = reader.readtext(pic)
+        word = [pic_name]
+        for result in results:
+            if result[2] > 0.05:
+                word.append(result[1])
+        subtitles.append(word)  
+
+    with open(output_path, 'w', encoding='utf-8-sig') as f:
+        writer = csv.writer(f, delimiter=',')
+        for subtitle in subtitles:
+            writer.writerow(subtitle)
 
 
 if __name__ == "__main__":
