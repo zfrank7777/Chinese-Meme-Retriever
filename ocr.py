@@ -112,18 +112,22 @@ def generate_meme_context_file():
             image.append("meme/001/"+files)
 
     subtitles = []
-    for i in tqdm(range(100)):
+    for i in tqdm(range(len(image))):
 
         image_path = image[i]
         pic_name = image_path.replace("meme/001/","")
 
-        pic = cv2.imread(image_path)
-        # cv2.imshow('test', pic)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
-
-        reader = easyocr.Reader(['ch_tra', 'en'])
-        results = reader.readtext(pic)
+        try:
+            pic = cv2.imread(image_path)
+            # cv2.imshow('test', pic)
+            # cv2.waitKey(0)
+            # cv2.destroyAllWindows()
+            reader = easyocr.Reader(['ch_tra', 'en'])
+            results = reader.readtext(pic)
+        except:
+            print(image_path)
+            continue
+        
         word = [pic_name]
         for result in results:
             if result[2] > 0.05:
