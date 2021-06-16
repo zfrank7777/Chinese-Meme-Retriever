@@ -46,6 +46,7 @@ C_sum = 0
 err_sum = 0
 R = []
 trange = tqdm(range(N), total=N)
+
 for i in trange:
 
     ground_truth = chinese_corpus[i][:10]
