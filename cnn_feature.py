@@ -7,14 +7,15 @@ import torch.nn as nn
 import numpy as np
 import re
 from numpy import linalg as LA
+from tqdm import tqdm
+import os
+import pickle 
 
 
-def pruning(raw_sentence):
-    #sentence = re.sub('[A-Za-z0-9]+', '', raw_sentence)
-    rule = re.compile(u"[^\u4e00-\u9fa5]")
-    sentence = rule.sub('',raw_sentence)
-    return sentence
-
+def read_cnn_featuers():
+    with open('meme/cnn_features.pkl', 'rb') as f:
+        features = pickle.load(f)
+    return features
 
 class Conv4(nn.Module):
     def __init__(self, model):
@@ -35,50 +36,34 @@ class CNN:
         self.model = model
         self.model.eval()
         self.transform = transforms.Compose([
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
             transforms.ToTensor(),
-            ])  
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
     def extract(self, img):
         img = self.transform(img).unsqueeze(0)
-        feature = self.model.forward(img).reshape(-1).squeeze()
+        with torch.no_grad():
+            feature = self.model.forward(img).reshape(-1).squeeze()
         return feature.cpu().detach().numpy()
 
 
 if __name__ == "__main__":
-    with open('data/Gossiping-QA-Dataset.txt') as f:
-        lines = f.readlines()
-    chinese_corpus = []
-    for line in lines[:100]:
-        line = line.split()
-        for i in line:
-            if len(i) > 5:
-                sentence = pruning(i)
-                chinese_corpus.append(sentence[:10])
     cnn = CNN()
-    file_folder = 'data/001'
-    font = ImageFont.truetype("fonts/cwTeXYen-zhonly.ttf", 30)
-    diffs = []
-    raws = []
-
-    for i in range(100):
-        file_number = str(random.randint(1, 100))
-        img_path = (file_folder + '/' + file_number + '.jpg')
-        img = Image.open(img_path)
-        width, height = img.size 
-
-        raw_features = cnn.extract(img)
-        raws.append(LA.norm(raw_features))
-
-        image_editable = ImageDraw.Draw(img)
-        wp = random.random() 
-        wp = 0.1
-        hp = 0.8
-        image_editable.text((width*wp, height*hp), chinese_corpus[i], "black", font=font, spacing=20, align="center")
+    file_folder = 'meme'
+    features = {}
+    for dirPath, dirNames, fileNames in os.walk(file_folder):
+        for fn in tqdm(fileNames, total=len(fileNames)):
+            if '.jpg' not in fn:
+                continue
+            if '0813' in fn:
+                continue
+            img_path = dirPath + '/' + fn
         
-        text_features = cnn.extract(img)
-        diff = LA.norm(raw_features - text_features)
-        diffs.append(diff)
+            img = Image.open(img_path).convert("RGB")
 
-    print(np.mean(diffs), np.std(diffs))
-    print(np.mean(raws), np.std(raws))
+            feature = cnn.extract(img)
+            features[img_path] = feature
 
-
+    with open(os.path.join('meme', 'cnn_features.pkl'), 'wb') as f:
+        pickle.dump(features, f)
