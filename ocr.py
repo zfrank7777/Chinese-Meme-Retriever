@@ -100,21 +100,21 @@ def model_precision_test():
         print(r)
 
 def generate_meme_context_file():
-    output_path = "meme/context.csv"
+    output_path = "meme/context2.csv"
 
     image = []
     #count = 0
-    for files in os.listdir("meme/001"):
-        if os.path.isfile("meme/001/"+files):
+    for files in os.listdir("meme/2/"):
+        if os.path.isfile("meme/2/"+files):
             #os.rename("meme/001/"+files,'meme/001/{0:04d}.jpg'.format(count))
             #count += 1
-            image.append("meme/001/"+files)
+            image.append("meme/2/"+files)
 
     subtitles = []
     for i in tqdm(range(len(image))):
 
         image_path = image[i]
-        pic_name = image_path.replace("meme/001/","")
+        pic_name = image_path.replace("meme/2/","")
 
         try:
             pic = cv2.imread(image_path)
@@ -126,7 +126,7 @@ def generate_meme_context_file():
         except:
             print(image_path)
             continue
-        
+
         word = [pic_name]
         for result in results:
             if result[2] > 0.05:
