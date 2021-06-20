@@ -10,6 +10,7 @@ from tqdm import tqdm
 import os 
 import cv2
 import csv
+import argparse
 
 ## Generate random chinese words
 def normal():
@@ -99,22 +100,22 @@ def model_precision_test():
     for r in R:
         print(r)
 
-def generate_meme_context_file():
-    output_path = "meme/context2.csv"
+def generate_meme_context_file(input_dir, output_path):
+    input_dir += '/'
 
     image = []
     #count = 0
-    for files in os.listdir("meme/2/"):
-        if os.path.isfile("meme/2/"+files):
+    for files in os.listdir(input_dir):
+        if os.path.isfile(input_dir+files):
             #os.rename("meme/001/"+files,'meme/001/{0:04d}.jpg'.format(count))
             #count += 1
-            image.append("meme/2/"+files)
+            image.append(input_dir+files)
 
     subtitles = []
     for i in tqdm(range(len(image))):
 
         image_path = image[i]
-        pic_name = image_path.replace("meme/2/","")
+        pic_name = image_path.replace(input_dir,"")
 
         try:
             pic = cv2.imread(image_path)
@@ -140,4 +141,8 @@ def generate_meme_context_file():
 
 
 if __name__ == "__main__":
-    generate_meme_context_file()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-i', dest='input_dir')
+    parser.add_argument('-o', dest='output_path')
+    args = parser.parse_args()
+    generate_meme_context_file(args.input_dir, args.output_path)
