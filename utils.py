@@ -2,6 +2,7 @@ import os
 import pickle
 import numpy as np
 import matplotlib.pyplot as plt
+import csv
 from PIL import Image
 
 from tqdm import tqdm
@@ -20,12 +21,11 @@ def read_files():
     # Read Files
     images_with_text = {}
     for fileName, dirName in fn2dir.items():
-        with open(os.path.join('meme', fileName), 'r') as f:
-            lines = f.readlines()
-            for line in lines:
-                line = line.replace('\n', '')
-                img = os.path.join('meme', dirName, line.split(',')[0]).replace('\ufeff', '')
-                images_with_text[img] = {'text': ''.join(line.split(',')[1:]), 'path': img}
+        with open(os.path.join('meme', fileName), 'r', newline='') as f:
+            reader = csv.reader(f)
+            for line in reader:
+                img = os.path.join('meme', dirName, line[0]).replace('\ufeff', '')
+                images_with_text[img] = {'text': ''.join(line[1:]), 'path': img}
     keys1 = set(images_with_text.keys())
     
     #  Read CNN features
@@ -40,6 +40,8 @@ def read_files():
 
     for i, k in enumerate(id2img):
         images[i]['cnn_features'] = features[k]
+    cnn_features_mat = np.stack([features[k] for k in id2img])
+    cnn_features_mat = cnn_features_mat / ((cnn_features_mat ** 2).mean(-1, keepdims=True) ** 0.5 + 1e-30)
 
     # Build Inverted File
     inverted_file = {}
@@ -57,7 +59,7 @@ def read_files():
             inverted_file[g] = inverted_file.get(g, {})
             inverted_file[g][img] = n
 
-    return images, inverted_file, np.mean(lens), img2id, id2img
+    return images, inverted_file, np.mean(lens), img2id, id2img, cnn_features_mat
     """
     # Read Inverted File cache if exists
     inverted_file_pkl = os.path.join('vsm/inverted-file.pkl')
@@ -120,14 +122,14 @@ def evaluate(results, answers):
     print('MAP: ', MAP)
 
 
-def show(images, size=500):
-    merged = np.zeros((size*3, size*3, 3), dtype=np.uint8)
-    for i, fn in enumerate(images[:9]):
-        x, y = i % 3 * size, i // 3 * size;
+def show(images, size=500, row=5):
+    merged = np.zeros((size*row, size*row, 3), dtype=np.uint8)
+    for i, fn in enumerate(images[:row*row]):
+        x, y = i % row * size, i // row * size;
         img = Image.open(fn)
         scale = min(size / img.width, size / img.height)
         dim = w, h = round(scale * img.width), round(scale * img.height)
-        img = np.asarray(img.resize((w, h)))
+        img = np.asarray(img.resize((w, h)).convert('RGB'))
         assert img.dtype == np.uint8
         before = [(size - d) // 2 for d in dim]
         after = [size - d - b for d, b in zip(dim, before)]

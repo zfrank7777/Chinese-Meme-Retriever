@@ -2,6 +2,7 @@ import argparse
 import os
 import logging
 import math
+import numpy as np
 
 from utils import read_files, show
 
@@ -17,6 +18,10 @@ def process_query(query, use_bi=True):
             if i > 0:
                 terms.append(query[i-1]+query[i])
     return terms
+
+
+def standardize(x):
+    return (x - x.mean()) / (x.std() + 1e-30)
 
 
 def retrieve(query, images, inverted_file, avg_len):
@@ -69,28 +74,40 @@ def get_feedback_query(imgs, images, inverted_file,
 
 def main(args):
     logging.info('Reading files ...')
-    images, inverted_file, avg_len, img2id, id2img = read_files()
+    images, inverted_file, avg_len, img2id, id2img, features = read_files()
+    N = len(images.keys())
 
     while True:
         logging.info('Enter query:')
         query = input()
 
-        score, top100 = retrieve(query, images, inverted_file, avg_len)
+        q_score, top100 = retrieve(query, images, inverted_file, avg_len)
         filenames = [id2img[i] for i in top100]
         print('before feedback')
         for fn in filenames[:10]:
             print(fn, img2id[fn], images[img2id[fn]]['text'])
+        q_score = np.array([q_score.get(i, 0) for i in range(N)])
+        q_score = standardize(q_score)
 
-        fb_query = get_feedback_query(top100[:args.num_feedback_doc],
-                                      images, inverted_file,
-                                      top_term=args.num_feedback_term)
-        fb_score, _ = retrieve(fb_query, images, inverted_file, avg_len)
-        for d, s in fb_score.items():
-            score[d] = score.get(d, 0) + s * args.feedback_weight
-        top100 = sorted(score.keys(),
-                        key=lambda x: score[x], reverse=True)[:100]
+        for _ in range(args.feedback_steps):
+            # Visual feedback
+            v_score = standardize(features @ features[top100[:args.num_visual_doc]].mean(0))
+            v_score = standardize(v_score)
+            print(v_score)
+
+            # Text feedback
+            fb_query = get_feedback_query(top100[:args.num_feedback_doc],
+                                          images, inverted_file,
+                                          top_term=args.num_feedback_term)
+            fb_score, _ = retrieve(fb_query, images, inverted_file, avg_len)
+            fb_score = np.array([fb_score.get(i, 0) for i in range(N)])
+            fb_score = standardize(fb_score)
+
+            score = q_score + fb_score * args.feedback_weight + v_score * args.visual_weight
+
+            top100 = score.argsort()[::-1][:100]
+
         filenames = [id2img[i] for i in top100]
-
         print('after feedback')
         for fn in filenames[:10]:
             print(fn, img2id[fn], images[img2id[fn]]['text'])
@@ -105,9 +122,21 @@ def _parse_args():
     parser.add_argument('-f', '--feedback_weight',
                         help='feedback score weight',
                         type=float,
-                        default=0.05)
+                        default=0.5)
+    parser.add_argument('-v', '--visual_weight',
+                        help='visual feedback score weight',
+                        type=float,
+                        default=0.5)
+    parser.add_argument('-s', '--feedback_steps',
+                        help='feedback steps',
+                        type=int,
+                        default=4)
     parser.add_argument('-n', '--num_feedback_doc',
                         help='number of feedback documents',
+                        type=int,
+                        default=10)
+    parser.add_argument('-nv', '--num_visual_doc',
+                        help='number of visual feedback documents',
                         type=int,
                         default=10)
     parser.add_argument('-t', '--num_feedback_term',
