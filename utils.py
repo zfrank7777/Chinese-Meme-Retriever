@@ -1,6 +1,9 @@
 import os
 import pickle
 import numpy as np
+import matplotlib.pyplot as plt
+from PIL import Image
+
 from tqdm import tqdm
 
 
@@ -15,24 +18,28 @@ def read_files():
     }
 
     # Read Files
-    i = 0
+    images_with_text = {}
     for fileName, dirName in fn2dir.items():
         with open(os.path.join('meme', fileName), 'r') as f:
             lines = f.readlines()
             for line in lines:
                 line = line.replace('\n', '')
-                img = os.path.join('meme', dirName, line.split(',')[0])
-                img2id[img] = i
-                images[i] = {'text': ''.join(line.split(',')[1:])}
-                id2img.append(img)
-                i += 1
+                img = os.path.join('meme', dirName, line.split(',')[0]).replace('\ufeff', '')
+                images_with_text[img] = {'text': ''.join(line.split(',')[1:]), 'path': img}
+    keys1 = set(images_with_text.keys())
     
     #  Read CNN features
     with open('meme/cnn_features.pkl', 'rb') as f:
         features = pickle.load(f)
-    for k, v in features.items():
-        if k in images.keys():
-            images[k]['cnn_features'] = v
+    keys2 = set(features.keys())
+
+    id2img = list(keys1 & keys2)
+    print('drop', (keys1 | keys2) - set(id2img))
+    img2id = {e: i for i, e in enumerate(id2img)}
+    images = {i: images_with_text[e] for i, e in enumerate(id2img)}
+
+    for i, k in enumerate(id2img):
+        images[i]['cnn_features'] = features[k]
 
     # Build Inverted File
     inverted_file = {}
@@ -111,6 +118,24 @@ def evaluate(results, answers):
     ans_len /= len(results)
     MAP /= len(results)
     print('MAP: ', MAP)
+
+
+def show(images, size=500):
+    merged = np.zeros((size*3, size*3, 3), dtype=np.uint8)
+    for i, fn in enumerate(images[:9]):
+        x, y = i % 3 * size, i // 3 * size;
+        img = Image.open(fn)
+        scale = min(size / img.width, size / img.height)
+        dim = w, h = round(scale * img.width), round(scale * img.height)
+        img = np.asarray(img.resize((w, h)))
+        assert img.dtype == np.uint8
+        before = [(size - d) // 2 for d in dim]
+        after = [size - d - b for d, b in zip(dim, before)]
+        img = np.pad(img, list(zip(before, after))[::-1] + [(0, 0)])
+        assert img.shape == (size, size, 3)
+        merged[y:y+size, x:x+size] = img
+    plt.imshow(merged)
+    plt.show()
 
 
 if __name__ == '__main__':

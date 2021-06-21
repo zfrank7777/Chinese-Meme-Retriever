@@ -2,10 +2,11 @@ import argparse
 import os
 import logging
 import math
-from utils import read_files
+
+from utils import read_files, show
 
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 
 def process_query(query, use_bi=True):
@@ -45,9 +46,10 @@ def retrieve(query, images, inverted_file, avg_len):
 def get_feedback_query(imgs, images, inverted_file,
                        k=1.2, top_term=10):
 
+    N = len(images.keys())
     new_terms = []
     for img in imgs:
-        text = images[img]
+        text = images[img]['text']
         new_terms += process_query(text)
     new_terms = list(set(new_terms))
 
@@ -75,11 +77,9 @@ def main(args):
 
         score, top100 = retrieve(query, images, inverted_file, avg_len)
         filenames = [id2img[i] for i in top100]
-        """
         print('before feedback')
         for fn in filenames[:10]:
             print(fn, img2id[fn], images[img2id[fn]]['text'])
-        """
 
         fb_query = get_feedback_query(top100[:args.num_feedback_doc],
                                       images, inverted_file,
@@ -91,9 +91,10 @@ def main(args):
                         key=lambda x: score[x], reverse=True)[:100]
         filenames = [id2img[i] for i in top100]
 
-        # print('after feedback')
+        print('after feedback')
         for fn in filenames[:10]:
             print(fn, img2id[fn], images[img2id[fn]]['text'])
+        show(filenames)
 
 
 def _parse_args():
