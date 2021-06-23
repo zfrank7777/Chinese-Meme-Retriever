@@ -9,7 +9,7 @@ import re
 from numpy import linalg as LA
 from tqdm import tqdm
 import os
-import pickle 
+import pickle
 
 
 def read_cnn_featuers():
@@ -31,7 +31,8 @@ class Conv4(nn.Module):
 
 class CNN:
     def __init__(self):
-        model = models.alexnet(pretrained=True)
+        # model = models.alexnet(pretrained=True)
+        model = models.mobilenet_v3_small(pretrained=True)
         # self.model = Conv4(model)
         self.model = model
         self.model.eval()
@@ -53,13 +54,14 @@ if __name__ == "__main__":
     file_folder = 'meme'
     features = {}
     for dirPath, dirNames, fileNames in os.walk(file_folder):
+        print(dirPath)
         for fn in tqdm(fileNames, total=len(fileNames)):
             if '.jpg' not in fn:
                 continue
             if '0813' in fn:
                 continue
             img_path = dirPath + '/' + fn
-        
+
             img = Image.open(img_path).convert("RGB")
 
             feature = cnn.extract(img)
