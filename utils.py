@@ -22,7 +22,7 @@ def add_folder_name(path):
     return new_path
 
 
-def read_files(data_dir='data', image_dir='meme'):
+def read_files(spongebob=False, data_dir='data', image_dir='meme'):
     images = {}
     img2id = {}
     id2img = []
@@ -46,13 +46,13 @@ def read_files(data_dir='data', image_dir='meme'):
                                 continue
                         images_with_text[img] = {'text': ''.join(line[1:]), 'path': img}
     #  Read CNN features
-    with open(os.path.join(data_dir, 'cnn_features.pkl'), 'rb') as f:
-        features = pickle.load(f)
-    spongebob_feature_path = os.path.join(data_dir, 'spongebob_cnn_features.pkl')
-    if os.path.exists(spongebob_feature_path):
+    if not spongebob:
+        with open(os.path.join(data_dir, 'cnn_features.pkl'), 'rb') as f:
+            features = pickle.load(f)
+    else:
+        spongebob_feature_path = os.path.join(data_dir, 'spongebob_cnn_features.pkl')
         with open(spongebob_feature_path, 'rb') as f:
-            spongebob_features = pickle.load(f)
-        features.update(spongebob_features)
+            features = pickle.load(f)
     keys1 = set(images_with_text.keys())
     keys2 = set(features.keys())
 
@@ -145,7 +145,7 @@ def evaluate(results, answers):
     print('MAP: ', MAP)
 
 
-def show(images, size=500, row=5):
+def show(images, size=500, row=4):
     merged = np.zeros((size*row, size*row, 3), dtype=np.uint8)
     for i, fn in enumerate(images[:row*row]):
         x, y = i % row * size, i // row * size;
