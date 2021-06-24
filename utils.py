@@ -8,6 +8,20 @@ from PIL import Image
 from tqdm import tqdm
 
 
+def add_folder_name(path):
+    spl = path.split('/')
+    fold_num = int(spl[2])
+    if fold_num % 27 == 0:
+        fold_num -= 1
+    head = (fold_num // 27) * 27 + 1
+    tail = (fold_num // 27 + 1) * 27
+    tail = min(tail, 181)
+    add_fold = '{:03d}_{:03d}'.format(head, tail)
+    new_spl = spl[:2] + [add_fold] + spl[2:]
+    new_path = '/'.join(new_spl)
+    return new_path
+
+
 def read_files(data_dir='data', image_dir='meme'):
     images = {}
     img2id = {}
@@ -26,13 +40,16 @@ def read_files(data_dir='data', image_dir='meme'):
                     reader = csv.reader(f)
                     for line in reader:
                         img = os.path.join(folder, line[0]).replace('\ufeff', '')
+                        if fn == 'spongebob.csv':
+                            img = add_folder_name(img)
+                            if not os.path.exists(img):
+                                continue
                         images_with_text[img] = {'text': ''.join(line[1:]), 'path': img}
-
     #  Read CNN features
     with open(os.path.join(data_dir, 'cnn_features.pkl'), 'rb') as f:
         features = pickle.load(f)
     spongebob_feature_path = os.path.join(data_dir, 'spongebob_cnn_features.pkl')
-    if os.path.exist(spongebob_feature_path):
+    if os.path.exists(spongebob_feature_path):
         with open(spongebob_feature_path, 'rb') as f:
             spongebob_features = pickle.load(f)
         features.update(spongebob_features)
@@ -40,7 +57,7 @@ def read_files(data_dir='data', image_dir='meme'):
     keys2 = set(features.keys())
 
     id2img = list(keys1 & keys2)
-    print('warning: cnn feature not found,\n drop', (keys1 | keys2) - set(id2img))
+    # print('warning: cnn feature not found,\n drop', (keys1 | keys2) - set(id2img))
     img2id = {e: i for i, e in enumerate(id2img)}
     images = {i: images_with_text[e] for i, e in enumerate(id2img)}
 
