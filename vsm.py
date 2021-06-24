@@ -34,7 +34,7 @@ def retrieve(query, images, inverted_file, avg_len):
     score = {}
     for term in query_terms:
         if term not in inverted_file.keys():
-            logging.warning('term not in inverted file: {}'.format(term))
+            # logging.warning('term not in inverted file: {}'.format(term))
             continue
         df = len(inverted_file[term].keys())
         idf = math.log(((N-df+0.5)/(df+0.5))+1)
@@ -93,7 +93,7 @@ def main(args):
             # Visual feedback
             v_score = standardize(features @ features[top100[:args.num_visual_doc]].mean(0))
             v_score = standardize(v_score)
-            print(v_score)
+            # print(v_score)
 
             # Text feedback
             fb_query = get_feedback_query(top100[:args.num_feedback_doc],

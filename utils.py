@@ -8,24 +8,26 @@ from PIL import Image
 from tqdm import tqdm
 
 
-def read_files():
+def read_files(data_dir='data', image_dir='meme'):
     images = {}
     img2id = {}
     id2img = []
 
-    fn2dir = {
-        'context.csv': '001',
-        'context2.csv': '2'
-    }
-
     # Read Files
     images_with_text = {}
-    for fileName, dirName in fn2dir.items():
-        with open(os.path.join('meme', fileName), 'r', newline='') as f:
-            reader = csv.reader(f)
-            for line in reader:
-                img = os.path.join('meme', dirName, line[0]).replace('\ufeff', '')
-                images_with_text[img] = {'text': ''.join(line[1:]), 'path': img}
+    for dirPath, dirNames, fileNames in os.walk(data_dir):
+        for fn in tqdm(fileNames, total=len(fileNames)):
+            if '.csv' in fn:
+                folder = os.path.join(image_dir, fn.replace('.csv', ''))
+                if not os.path.isdir(folder):
+                    print('warning: no such directory {}'.format(folder))
+                    continue
+                with open(os.path.join(dirPath, fn), 'r') as f:
+                    reader = csv.reader(f)
+                    for line in reader:
+                        img = os.path.join(folder, line[0]).replace('\ufeff', '')
+                        images_with_text[img] = {'text': ''.join(line[1:]), 'path': img}
+
     keys1 = set(images_with_text.keys())
 
     #  Read CNN features
@@ -34,7 +36,7 @@ def read_files():
     keys2 = set(features.keys())
 
     id2img = list(keys1 & keys2)
-    print('drop', (keys1 | keys2) - set(id2img))
+    print('warning: cnn feature not found,\n drop', (keys1 | keys2) - set(id2img))
     img2id = {e: i for i, e in enumerate(id2img)}
     images = {i: images_with_text[e] for i, e in enumerate(id2img)}
 
