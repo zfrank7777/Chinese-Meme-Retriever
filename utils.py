@@ -27,7 +27,7 @@ def read_files():
                 img = os.path.join('meme', dirName, line[0]).replace('\ufeff', '')
                 images_with_text[img] = {'text': ''.join(line[1:]), 'path': img}
     keys1 = set(images_with_text.keys())
-    
+
     #  Read CNN features
     with open('meme/cnn_features.pkl', 'rb') as f:
         features = pickle.load(f)
@@ -51,10 +51,10 @@ def read_files():
         t = item['text']
         lens.append(len(t))
         for i, c in enumerate(t):
-            grams[c] = grams.get(c, 0) + 1 
+            grams[c] = grams.get(c, 0) + 1
             if i > 0:
                 bigram = t[i-1]+t[i]
-                grams[bigram] = grams.get(bigram, 0) + 1 
+                grams[bigram] = grams.get(bigram, 0) + 1
         for g, n in grams.items():
             inverted_file[g] = inverted_file.get(g, {})
             inverted_file[g][img] = n
@@ -73,10 +73,10 @@ def read_files():
             grams = {}
             t = item['text']
             for i, c in enumerate(t):
-                grams[c] = grams.get(c, 0) + 1 
+                grams[c] = grams.get(c, 0) + 1
                 if i > 0:
                     bigram = t[i-1]+t[i]
-                    grams[bigram] = grams.get(bigram, 0) + 1 
+                    grams[bigram] = grams.get(bigram, 0) + 1
             for g, n in grams.items():
                 inverted_file[g] = inverted_file.get(g, {})
                 inverted_file[g][img2id[img]] = n
