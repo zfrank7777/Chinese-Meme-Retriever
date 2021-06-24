@@ -28,13 +28,14 @@ def read_files(data_dir='data', image_dir='meme'):
                         img = os.path.join(folder, line[0]).replace('\ufeff', '')
                         images_with_text[img] = {'text': ''.join(line[1:]), 'path': img}
 
-
     #  Read CNN features
     with open(os.path.join(data_dir, 'cnn_features.pkl'), 'rb') as f:
         features = pickle.load(f)
-    with open(os.path.join(data_dir, 'spongebob_cnn_features.pkl'), 'rb') as f:
-        spongebob_features = pickle.load(f)
-    features.update(spongebob_features)
+    spongebob_feature_path = os.path.join(data_dir, 'spongebob_cnn_features.pkl')
+    if os.path.exist(spongebob_feature_path):
+        with open(spongebob_feature_path, 'rb') as f:
+            spongebob_features = pickle.load(f)
+        features.update(spongebob_features)
     keys1 = set(images_with_text.keys())
     keys2 = set(features.keys())
 
